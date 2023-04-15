@@ -1,36 +1,41 @@
-import React, { useState, useContext } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { PetAPIResponse } from "./APIResponsesTypes";
 import { useQuery } from "@tanstack/react-query";
+import { useContext, useState } from "react";
+import AdoptedPetContext from "./AdoptedPetContext";
+import Modal from "./Modal";
+import ErrorBoundary from "./ErrorBoundary";
 import fetchPet from "./fetchPet";
 import Carousel from "./Carousel";
-import ErrorBoundary from "./ErrorBoundary";
-import Modal from "./Modal";
-import AdoptedPetContext from "./AdoptedPetContext";
-import { useNavigate } from "react-router-dom";
-
+import * as React from "react";
 const Details = () => {
-  const [showModal, setShowModal] = useState(false);
-  const navigate = useNavigate(false);
-  // eslint-disable-next-line no-unused-vars
-  const [_, setAdoptedPet] = useContext(AdoptedPetContext);
   const { id } = useParams();
-  const results = useQuery(["details", id], fetchPet);
+  const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
+  const results = useQuery<PetAPIResponse>(["details", id], fetchPet);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, setAdoptedPet] = useContext(AdoptedPetContext);
 
   if (results.isLoading) {
     return (
       <div className="loading-pane">
-        <h2 className="loader">@</h2>
+        <h2 className="loader">🌀</h2>
       </div>
     );
   }
-  const pet = results.data.pets[0];
+
+  const pet = results?.data?.pets[0];
+
+  if (!pet) {
+    throw new Error("pet not found");
+  }
+
   return (
     <div className="details">
       <Carousel images={pet.images} />
       <div>
-        <h2>
-          {pet.animal} - {pet.breed} - {pet.city}, {pet.state}
-        </h2>
+        <h1>{pet.name}</h1>
+        <h2>{`${pet.animal} — ${pet.breed} — ${pet.city}, ${pet.state}`}</h2>
         <button onClick={() => setShowModal(true)}>Adopt {pet.name}</button>
         <p>{pet.description}</p>
         {showModal ? (
@@ -46,7 +51,7 @@ const Details = () => {
                 >
                   Yes
                 </button>
-                <button onClick={() => console.log}>No</button>
+                <button onClick={() => setShowModal(false)}>No</button>
               </div>
             </div>
           </Modal>
@@ -56,12 +61,10 @@ const Details = () => {
   );
 };
 
-function DetailsErrorBoundary(props) {
+export default function DetailsErrorBoundary(props) {
   return (
     <ErrorBoundary>
       <Details {...props} />
     </ErrorBoundary>
   );
 }
-
-export default DetailsErrorBoundary;

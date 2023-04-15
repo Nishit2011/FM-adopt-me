@@ -1,7 +1,8 @@
-import React from "react";
+import * as React from "react";
 import Pet from "./Pet";
 
 const Results = ({ pets }) => {
+  if (!pets) return;
   return (
     <div className="search">
       {!pets.length ? (
