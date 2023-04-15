@@ -1,4 +1,10 @@
-import React, { useState, useContext } from "react";
+import React, {
+  useState,
+  useContext,
+  useDeferredValue,
+  useMemo,
+  useTransition,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
 
 import Results from "./Results";
@@ -19,10 +25,15 @@ const SearchParams = () => {
   const [adoptedPet] = useContext(AdoptedPetContext);
 
   const breeds = useBreedList(animal);
+  const [isPending, startTransition] = useTransition();
   console.log("---", requestParams);
 
   const results = useQuery(["search", requestParams], fetchSearch);
   const pets = results?.data?.pets ?? [];
+  const deferredPets = useDeferredValue(pets);
+  const renderedPets = useMemo(() => <Results pets={deferredPets} />, {
+    deferredPets,
+  });
 
   return (
     <div className="search-params">
@@ -35,6 +46,7 @@ const SearchParams = () => {
             breed: formData.get("breed"),
             location: formData.get("location"),
           };
+          startTransition(() => setRequestParams(obj));
           setRequestParams(obj);
         }}
       >
@@ -75,10 +87,16 @@ const SearchParams = () => {
             ))}
           </select>
         </label>
-        <button>Submit</button>
+        {isPending ? (
+          <div className="mini loading-pane">
+            <h2>Loading...</h2>
+          </div>
+        ) : (
+          <button>Submit</button>
+        )}
       </form>
 
-      <Results pets={pets} />
+      {renderedPets}
     </div>
   );
 };
